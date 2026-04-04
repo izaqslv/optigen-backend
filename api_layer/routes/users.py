@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-
 from data.models import User
 from api_layer.security.hashing import hash_password
 from api_layer.security.db import get_db
@@ -24,7 +23,6 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         username=user.username,
         hashed_password=hash_password(user.password)
     )
-
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
