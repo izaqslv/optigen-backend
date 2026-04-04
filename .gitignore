@@ -1,0 +1,21 @@
+# Ambientes virtuais
+.venv/
+.venv_train/
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+test_auth.py
+optigen.db
+*.db
+
+.idea/
+storage/
+
+# Sistema
+.DS_Store
+
