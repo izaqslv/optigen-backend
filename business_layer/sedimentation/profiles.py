@@ -1,4 +1,4 @@
-# business_layer/sedimentation/profiles.py
+# business_layer/sedimentation/profiles_routes.py
 
 """
 Funções de alto nível para trabalhar com os perfis C(z,t)

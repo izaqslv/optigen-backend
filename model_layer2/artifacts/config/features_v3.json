@@ -1,0 +1,17 @@
+[
+    "tempo",
+    "altura",
+    "c_lag1",
+    "c_lag2",
+    "dc_dt",
+    "dc_dh",
+    "estado",
+    "regime_interface",
+    "dist_interface",
+    "abs_dist_interface",
+    "dens_susp",
+    "dens_solids",
+    "teor_solids",
+    "m",
+    "n"
+]

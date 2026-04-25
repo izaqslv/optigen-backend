@@ -1,0 +1,6 @@
+{
+    "model": "C:\\Users\\Izaq\\Projects\\optigen-backend\\model_layer2\\training\\..\\artifacts\\lgbm_model.pkl",
+    "features": "C:\\Users\\Izaq\\Projects\\optigen-backend\\model_layer2\\training\\..\\artifacts\\lgbm_features.json",
+    "metrics": "C:\\Users\\Izaq\\Projects\\optigen-backend\\model_layer2\\training\\..\\artifacts\\lgbm_metrics.json",
+    "model_type": "lgbm"
+}

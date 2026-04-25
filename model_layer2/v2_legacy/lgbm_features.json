@@ -1,0 +1,17 @@
+[
+    "tempo",
+    "altura",
+    "altura_interface",
+    "gradiente_altura",
+    "gradiente_local",
+    "c_lag1",
+    "c_lag2",
+    "dC_dt",
+    "d2C_dt2",
+    "dens_susp",
+    "dens_solids",
+    "teor_solids",
+    "dp_medio",
+    "m",
+    "n"
+]
