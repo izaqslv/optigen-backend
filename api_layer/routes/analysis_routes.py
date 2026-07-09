@@ -8,11 +8,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from io import BytesIO
 from sklearn.metrics import mean_absolute_error
-from model_layer.analysis.data_loader import load_and_align_data
-# from model_layer.regimes.test_plot_regimes import fluid_id
-# from model_layer2.v2_legacy.predict import predict_concentration
+from module_fluid_engineering.model_layer.dataset.data_loader import load_and_align_data
+# from model_layer_legacy.regimes.test_plot_regimes import fluid_id
+# from model_layer.v2_legacy.predict import predict_concentration
+from fastapi import Depends
+from api_layer.security.permissions import require_module
 
-from model_layer2.inference_fun.predict_concentration_v3 import predict_concentration_v3
+
+from module_fluid_engineering.model_layer.inference.predictor import predict_concentration
 
 
 router = APIRouter(
@@ -20,11 +23,11 @@ router = APIRouter(
     tags=["Analysis"]
 )
 
-@router.get("/predict")
+@router.get("/predict", dependencies=[Depends(require_module("analysis_module"))])
 def predict_concentration_endpoint():
     measurements, fluids_meta = load_and_align_data("data/DadosSedimentation.xlsx")
 
-    df_pred = predict_concentration_v3(
+    df_pred = predict_concentration(
         measurements=measurements,
         fluids_meta=fluids_meta
     )
@@ -34,7 +37,7 @@ def predict_concentration_endpoint():
     return df_pred.to_dict(orient="records")
 
 
-@router.get("/predict_plot")
+@router.get("/predict_plot", dependencies=[Depends(require_module("analysis_module"))])
 def predict_plot(fluid_id: int):
     # =========================
     # carregar dados
@@ -48,7 +51,7 @@ def predict_plot(fluid_id: int):
     print(measurements.head(20))
 
     # predição
-    df = predict_concentration_v3(measurements, fluids_meta)
+    df = predict_concentration(measurements, fluids_meta)
     df = df[df["fluid_id"] == fluid_id]
 
     # =========================
@@ -131,7 +134,7 @@ def predict_plot(fluid_id: int):
 
 
 
-@router.get("/plots")
+@router.get("/plots", dependencies=[Depends(require_module("analysis_module"))])
 def generate_and_get_plots():
     """
     Executa run_analysis.py como script externo
@@ -146,8 +149,8 @@ def generate_and_get_plots():
         #  1. Executa script existente (SEM alterar nada)
         # OBS: para ver os gráficos com matplotlib: ative abaixo (até a linha indicada)
         # subprocess.run(
-        #   ["python", "-m", "model_layer.analysis.run_analysis"],
-        #   [sys.executable, "-m", "model_layer.analysis.run_analysis"],
+        #   ["python", "-m", "model_layer_legacy.analysis.run_analysis"],
+        #   [sys.executable, "-m", "model_layer_legacy.analysis.run_analysis"],
         # Ou, para rodar sem ver os gráficos (idela para quando estiver no frontend), ativar anaixo:
         # cria ambiente isolado para execução:
         env=os.environ.copy()
@@ -155,14 +158,14 @@ def generate_and_get_plots():
         env["MPLBACKEND"] = "Agg"
         # executa o script sem abrir janelas de gráfico
         subprocess.run(
-            [sys.executable, "-m", "model_layer.analysis.run_analysis"],
+            [sys.executable, "-m", "model_layer_legacy.analysis.run_analysis"],
             check=True,
             env=env,
             # cwd=os.getcwd()
         )
 
         #  2. Diretório onde os gráficos são salvos
-        output_dir = "model_layer/analysis/outputs/plots"
+        output_dir = "model_layer_legacy/analysis/outputs/plots"
 
         if not os.path.exists(output_dir):
             raise Exception("Diretório de saída não encontrado.")

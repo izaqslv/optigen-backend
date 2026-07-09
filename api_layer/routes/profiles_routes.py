@@ -1,42 +1,28 @@
 from fastapi import APIRouter, HTTPException, Query, Depends, Path
-import datetime
-import os
-import io
-import base64
-import matplotlib.pyplot as plt
-import numpy as np
-from data_layer.sedimentation.dataset_loader import try_load_dataset
-from business_layer.sedimentation.profiles import (
-    list_available_fluids,
-    list_heights_for_fluid,
-    get_profile_timeseries,
-)
-from business_layer.sedimentation.plotter import (
-    generate_profile_plot_from_dataset,
-    format_metadata_text
-)
-
+import datetime, os, io, base64, matplotlib.pyplot as plt, numpy as np
+from module_fluid_engineering.model_layer.dataset.profiles_dataset_builder import build_profiles_dataset
+from module_fluid_engineering.business_layer.fluid_engineering.profiles import (
+    list_available_fluids, list_heights_for_fluid, get_profile_timeseries)
+from module_fluid_engineering.business_layer.fluid_engineering.plotter import (generate_profile_plot_from_dataset,
+                                                                               format_metadata_text)
 from api_layer.security.dependencies import get_current_user
-from pydantic import BaseModel
-from business_layer.sedimentation.model_inference import predict_concentration, predict_curve, compare_with_experimental
-from business_layer.sedimentation.plotter import generate_curve_plot, generate_comparison_plot
+from api_layer.security.permissions import require_module
 
 
 router = APIRouter(
     prefix="/profiles",
-    tags=["profiles"]
-)
+    tags=["profiles"],
+    dependencies=[Depends(require_module("fluid_simulation"))])
 
 #-----------------------------------------------------------------------------------------------------------------------
 @router.get(
     "/available_fluids",
     tags=["profiles"],
     summary="List available fluids",
-    description="Returns a sorted list of all fluids available in the JSON dataset.",
-)
+    description="Returns a sorted list of all fluids available in the JSON dataset.")
 async def list_fluids(user: str = Depends(get_current_user)):
     try:
-        dataset = try_load_dataset()
+        dataset = build_profiles_dataset()
         fluids = list_available_fluids(dataset)
         return {
             "success": True,
@@ -55,7 +41,7 @@ async def list_fluids(user: str = Depends(get_current_user)):
 )
 async def list_heights(user: str = Depends(get_current_user), fluid_id: int= Query(..., description="Fluid ID (5–10)", example=7)):
     try:
-        dataset = try_load_dataset()
+        dataset = build_profiles_dataset()
         heights = list_heights_for_fluid(dataset, fluid_id)
         return {
             "success": True,
@@ -76,11 +62,11 @@ async def list_heights(user: str = Depends(get_current_user), fluid_id: int= Que
     description="Return concentration timeseries for a given fluid_id and height (cm).",
 )
 async def profiles_timeseries(user: str = Depends(get_current_user),
-    fluid_id: int= Path(..., description="Fluid ID (5–10)", example=9),
-    height: float= Query(..., description="Choose a height (cm)", example=12),
-    show_metadata: bool = Query(True, description="Include metadata in payload."),
-):
-    dataset = try_load_dataset()
+                              fluid_id: int= Path(..., description="Fluid ID (5–10)", example=9),
+                              height: float= Query(..., description="Choose a height (cm)", example=12),
+                              show_metadata: bool = Query(True, description="Include metadata in payload."),
+                              ):
+    dataset = build_profiles_dataset()
     try:
         ts = get_profile_timeseries(
             dataset,
@@ -113,18 +99,18 @@ async def profiles_timeseries(user: str = Depends(get_current_user),
     description="Generate PNG plot (time vs concentration). Use save=true to persist file on server.",
 )
 async def profiles_plot(user: str = Depends(get_current_user),
-    fluid_id: int= Path(..., description="Fluid ID (5–10)", example=6),
-    height: float= Query(..., description="Choose a height (cm)", example=18),
-    save: bool = Query(
-        False,
-        description="If true, saves PNG to storage/plots and returns the path.",
-    ),
-    show_metadata: bool = Query(
-        True,
-        description="If true, includes fluid metadata in response.",
-    ),
-):
-    dataset = try_load_dataset()
+                        fluid_id: int= Path(..., description="Fluid ID (5–10)", example=6),
+                        height: float= Query(..., description="Choose a height (cm)", example=18),
+                        save: bool = Query(
+                            False,
+                            description="If true, saves PNG to storage/plots and returns the path.",
+                        ),
+                        show_metadata: bool = Query(
+                            True,
+                            description="If true, includes fluid metadata in response.",
+                        ),
+                        ):
+    dataset = build_profiles_dataset()
     save_path = None
 
     # Define output directory if saving
@@ -173,7 +159,7 @@ async def profiles_plot(user: str = Depends(get_current_user),
 @router.get("/{fluid_id}/plot_all", tags=["profiles"])
 def plot_all_profiles(fluid_id: int= Path(..., description="Fluid ID (5–10)", example=6), show_metadata: bool = True, user: str = Depends(get_current_user)):
     try:
-        dataset = try_load_dataset()
+        dataset = build_profiles_dataset()
 
         # 🔹 alturas direto da função
         heights = list_heights_for_fluid(dataset, fluid_id)

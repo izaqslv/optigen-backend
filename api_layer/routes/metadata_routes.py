@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from business_layer.sedimentation.fluids_metadata import FLUIDS_METADATA
+from module_fluid_engineering.business_layer.fluid_engineering.fluids_metadata import FLUIDS_METADATA
 
 from fastapi import Depends
 from api_layer.security.dependencies import get_current_user

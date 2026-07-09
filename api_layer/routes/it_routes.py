@@ -1,30 +1,42 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from fastapi.responses import FileResponse
-import os
-import shutil
-from module_it_alumar.it_orchestrator import ITOrchestrator
+import os, shutil, uuid, json
+from module_work_instructions.it_orchestrator import ITOrchestrator
+from api_layer.security.permissions import require_module
+from core.models import WorkInstruction
+from sqlalchemy.orm import Session
+from api_layer.security.db import get_db
+
 
 router = APIRouter(
-    prefix="/it",
+    prefix="/work-instructions",
     tags=["Work Instructions (IT)"]
 )
 
-# Inicialização do Orquestrador com diretório de saída padronizado
-orchestrator = ITOrchestrator(output_dir="data/generated_its")
-TEMP_UPLOAD_DIR = "data/temp_uploads"
+# Diretório de uploads temporários
+TEMP_UPLOAD_DIR = "module_work_instructions/data/temp_uploads"
 os.makedirs(TEMP_UPLOAD_DIR, exist_ok=True)
 
+# Função de Dependência para garantir um Orquestrador LIMPO por requisição
+# Isso elimina o "Efeito Memória" entre simulações diferentes.
+def get_orchestrator():
+    return ITOrchestrator(output_dir="module_work_instructions/data/generated_its")
 
 @router.post("/generate")
 async def generate_from_file(
         file: UploadFile = File(...),
-        filename_prefix: str = Form("IT_Alumar")
+        filename_prefix: str = Form("IT_Alumar"),
+        token_data: dict = Depends(require_module("it_agent")),
+        orchestrator: ITOrchestrator = Depends(get_orchestrator),
+        db: Session = Depends(get_db)
 ):
     """
     Endpoint Profissional: Recebe qualquer arquivo (Áudio, Vídeo, PDF, Word)
     e retorna a IT estruturada + PDF oficial + Word editável.
     """
-    temp_path = os.path.join(TEMP_UPLOAD_DIR, file.filename)
+    # Gera um nome único para o arquivo para evitar conflitos no Windows 11
+    temp_filename = f"{uuid.uuid4().hex}_{file.filename}"
+    temp_path = os.path.join(TEMP_UPLOAD_DIR, temp_filename)
 
     try:
         # Salva o arquivo temporariamente para processamento
@@ -35,18 +47,31 @@ async def generate_from_file(
         ext = file.filename.split(".")[-1].lower()
         input_type = "document" if ext in ["pdf", "docx"] else "media"
 
-        # Orquestra o processamento completo (Geração de Dados, PDF e Word)
+        # Orquestra o processamento completo usando a instância isolada do orquestrador
         result = orchestrator.process_and_generate(
             file_path=temp_path,
             input_type=input_type,
             filename_prefix=filename_prefix
         )
 
+        # --- CORREÇÃO CIRÚRGICA ---
+        # 1. Usamos o filename_prefix que você enviou como título
+        # 2. Salvamos o JSON da IT no content_text para que o dashboard mostre a IT real
+        new_it = WorkInstruction(
+            user_id=token_data["user_id"],
+            title=filename_prefix,
+            content_text=json.dumps(result["data"]),
+            pdf_url=result["pdf_url"]
+        )
+        db.add(new_it)
+        db.commit()
+        # --------------------------
+
         return {
             "message": "Processamento concluído com sucesso",
             "data": result["data"],
             "pdf_url": result["pdf_url"],
-            "word_url": result["word_url"]  # <-- Suporte ao Word adicionado
+            "word_url": result.get("word_url", "")
         }
 
     except Exception as e:

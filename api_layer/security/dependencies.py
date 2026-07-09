@@ -1,20 +1,14 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
-from dotenv import load_dotenv
-import os
-
-# ⚠️ tem que ser igual ao do auth_routes.py
-load_dotenv()
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = "HS256"
+from api_layer.security.config import SECRET_KEY, ALGORITHM
 
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login-swagger")
 
-
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
+        # Aqui ele usará a SECRET_KEY vinda do config.py
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
 

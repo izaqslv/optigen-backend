@@ -1,6 +1,5 @@
 # 1. Usar uma imagem Python leve e estável
 FROM python:3.11-slim
-
 # 2. Definir diretório de trabalho dentro do container
 WORKDIR /app
 
@@ -20,7 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 6. Copiar todo o código do projeto para dentro do container
 COPY . .
 
-# 7. Definir o PYTHONPATH para garantir que o Python encontre os módulos api_layer e model_layer2
+# 7. Definir o PYTHONPATH para garantir que o Python encontre os módulos api_layer e model_layer
 ENV PYTHONPATH=/app
 
 # 8. Expor a porta que o FastAPI usará (a padrão é 8000), mas a minha localmente é 8010
